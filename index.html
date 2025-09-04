@@ -32,6 +32,29 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #d667b8;
         }
+
+        /* Styles for the sticky/hiding form container */
+        #note-form-container {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            transition: transform 0.4s ease-in-out;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+             /* Use negative margin to span the container's padding */
+            margin-left: -1rem;
+            margin-right: -1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            /* Add a background that appears when it floats over content */
+            background: rgba(254, 242, 242, 0.85); /* bg-pink-50 with opacity */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #note-form-container.form-hidden {
+            transform: translateY(-110%);
+        }
     </style>
 </head>
 <body class="bg-pink-50 min-h-screen antialiased text-slate-700">
@@ -47,31 +70,33 @@
         </header>
 
         <!-- Note Input Form -->
-        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 transition-shadow hover:shadow-xl">
-            <form id="note-form" class="space-y-4">
-                <div>
-                    <label for="note-text" class="block text-lg mb-2 text-slate-600">ข้อความ:</label>
-                    <textarea id="note-text" rows="4" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" placeholder="เขียนข้อความของคุณที่นี่..." required></textarea>
-                </div>
+        <div id="note-form-container" class="mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-lg transition-shadow hover:shadow-xl">
+                <form id="note-form" class="space-y-4">
+                    <div>
+                        <label for="note-text" class="block text-lg mb-2 text-slate-600">ข้อความ:</label>
+                        <textarea id="note-text" rows="4" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" placeholder="เขียนข้อความของคุณที่นี่..." required></textarea>
+                    </div>
 
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <!-- Date Input -->
-                    <div class="flex-1">
-                        <label for="note-date" class="block text-lg mb-2 text-slate-600">วันที่:</label>
-                        <input type="date" id="note-date" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" required>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <!-- Date Input -->
+                        <div class="flex-1">
+                            <label for="note-date" class="block text-lg mb-2 text-slate-600">วันที่:</label>
+                            <input type="date" id="note-date" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" required>
+                        </div>
+                        <!-- Time Input -->
+                        <div class="flex-1">
+                            <label for="note-time" class="block text-lg mb-2 text-slate-600">เวลา:</label>
+                            <input type="time" id="note-time" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" required>
+                        </div>
                     </div>
-                    <!-- Time Input -->
-                    <div class="flex-1">
-                        <label for="note-time" class="block text-lg mb-2 text-slate-600">เวลา:</label>
-                        <input type="time" id="note-time" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" required>
-                    </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <button type="submit" class="w-full bg-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-600 active:scale-95 transition-transform duration-150 shadow-md">
-                    บันทึกข้อความ
-                </button>
-            </form>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-600 active:scale-95 transition-transform duration-150 shadow-md">
+                        บันทึกข้อความ
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Notes Display Area -->
@@ -88,6 +113,21 @@
             const noteDate = document.getElementById('note-date');
             const noteTime = document.getElementById('note-time');
             const notesContainer = document.getElementById('notes-container');
+            const noteFormContainer = document.getElementById('note-form-container');
+
+            // --- Sticky Form Logic ---
+            let lastScrollTop = 0;
+            window.addEventListener("scroll", () => {
+                let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                // Hide if scrolling down and past a certain point. Show if scrolling up.
+                if (scrollTop > lastScrollTop && scrollTop > 150) { 
+                    noteFormContainer.classList.add('form-hidden');
+                } else {
+                    noteFormContainer.classList.remove('form-hidden');
+                }
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            }, false);
+
 
             // --- Helper Functions ---
             function getNotesFromLocalStorage() {
@@ -260,6 +300,4 @@
     </script>
 </body>
 </html>
-
-
 
