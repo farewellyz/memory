@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมุดบันทึกน้อย</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for a cute Thai font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Itim', cursive;
+        }
+        /* Custom scrollbar for a softer look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fde2f3;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e9a8d9;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d667b8;
+        }
+    </style>
+</head>
+<body class="bg-pink-50 min-h-screen antialiased text-slate-700">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-bold text-pink-500 drop-shadow-sm">สมุดบันทึกน้อย</h1>
+            <p class="text-pink-400 mt-2">บันทึกเรื่องราวและความทรงจำของคุณ</p>
+            <p id="note-counter" class="text-slate-500 mt-1"></p>
+        </header>
+
+        <!-- Note Input Form -->
+        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8 transition-shadow hover:shadow-xl">
+            <form id="note-form" class="space-y-4">
+                <div>
+                    <label for="note-text" class="block text-lg mb-2 text-slate-600">ข้อความ:</label>
+                    <textarea id="note-text" rows="4" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" placeholder="เขียนข้อความของคุณที่นี่..." required></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <!-- Date Input -->
+                    <div class="flex-1">
+                        <label for="note-date" class="block text-lg mb-2 text-slate-600">วันที่:</label>
+                        <input type="date" id="note-date" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" required>
+                    </div>
+                    <!-- Time Input -->
+                    <div class="flex-1">
+                        <label for="note-time" class="block text-lg mb-2 text-slate-600">เวลา:</label>
+                        <input type="time" id="note-time" class="w-full p-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition" required>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-600 active:scale-95 transition-transform duration-150 shadow-md">
+                    บันทึกข้อความ
+                </button>
+            </form>
+        </div>
+
+        <!-- Notes Display Area -->
+        <div id="notes-container" class="space-y-8">
+            <!-- Notes grouped by month will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const noteForm = document.getElementById('note-form');
+            const noteText = document.getElementById('note-text');
+            const noteDate = document.getElementById('note-date');
+            const noteTime = document.getElementById('note-time');
+            const notesContainer = document.getElementById('notes-container');
+
+            // --- Helper Functions ---
+            function getNotesFromLocalStorage() {
+                return JSON.parse(localStorage.getItem('notes') || '[]');
+            }
+
+            function saveNotesToLocalStorage(notes) {
+                localStorage.setItem('notes', JSON.stringify(notes));
+            }
+
+            // --- Initial Data Population ---
+            function populateInitialData() {
+                 const sampleData = `
+1. ฝันดีนะคะ เลิฟยูวว - 01:47 11/08/25
+2. เลิฟยุวน้าาา - 13:44 11/08/25
+3. รักบี๋เหมือนกันค่ะ - 17:37 11/08/25
+4. รักม่อนที่สุดดเยยยยนะะ - 00:29 12/08/25
+5. รักๆๆ - 00:29 12/08/25
+6. รักม่อนนะคะ - 00:07 13/08/25
+7. เลิฟยู - 17:17 13/08/25
+8. Loveu - 20:14 13/08/25
+9. รักนะคะ - 12:31 14/08/25
+10. รักที่ฉุด - 08:44 15/08/25
+11. รักมากๆ - 08:44 15/08/25
+12. ร้ากกกกก - 08:44 15/08/25
+13. เลิฟยูนะ จู้วๆๆๆ - 09:01 15/08/25
+14. รักบี๋นะคนเก่งของเค้า - 13:27 15/08/25
+15. รักบี๋นะคะ - 22:42 15/08/25
+16. รักม่อนเหมือนกันน้า จุ้บๆ - 01:13 16/08/25
+17. เค้าก้รักบี๋ค่ะ - 17:15 16/08/25
+18. รักม่อนมากๆนะคะ - 00:26 19/08/25
+19. เค้ารักเธอนะคนเก่งของเค้า - 09:57 19/08/25
+20. รักบิบี๋นะคะ คิดถึงฝุดๆๆ - 09:03 20/08/25
+21. รักกก - 09:58 20/08/25
+22. รักนะคะะะะะ - 13:17 21/08/25
+23. มิ้วรักม่อนนะคะ - 13:49 22/08/25
+24. รักม่อนเหมือนกัน - 00:48 22/08/25
+25. รักเหมือนกัยค้าบผม - 17:31 22/08/25
+26. รักเหมือนกันนะคะะ จุ้บ - 01:56 23/08/25
+27. รักค่ะ - 14:54 23/08/25
+28. รักที่ฉุดเยยยย - 09:32 25/08/25
+29. รักบี๋นะ - 18:16 25/08/25
+30. รักบิบี๋นะคะะะะะะ - 11:06 26/08/25
+31. รักบี๋นะคะะะะ - 15:49 26/08/25
+32. รักที่ฉุดเยย - 00:06 27/08/25
+33. เค้ารักบี๋มากๆนะคะ - 19:40 29/08/25
+34. รักบี๋น้าา - 22:18 30/08/25
+35. รักน้าาา - 09:23 01/09/25
+36. รักม่อนนะค้าบบ - 01:10 03/09/25
+37. รักเหมือนกันน้าาา - 01:04 04/09/25
+38. รักนะคะะคนเก่งของเค้า - 08:44 04/09/25
+                `.trim().split('\n');
+
+                const initialNotes = sampleData.map((line, index) => {
+                    const cleanLine = line.replace(/^\d+\.\s*/, '');
+                    const [text, dateTimePart] = cleanLine.split(' - ').map(s => s.trim());
+                    const [timeStr, dateStr] = dateTimePart.split(' ');
+                    const [day, month, year] = dateStr.split('/');
+                    const formattedDate = `20${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    
+                    return { id: Date.now() + index, text, date: formattedDate, time: timeStr };
+                });
+                
+                saveNotesToLocalStorage(initialNotes);
+            }
+
+            // --- Main Rendering Function ---
+            function renderNotes() {
+                notesContainer.innerHTML = ''; 
+                const notes = getNotesFromLocalStorage();
+                const noteCounter = document.getElementById('note-counter');
+
+                noteCounter.textContent = `มีบันทึกทั้งหมด ${notes.length} รายการ`;
+
+                if (notes.length === 0) {
+                    notesContainer.innerHTML = `<div class="text-center text-slate-500 py-10">ยังไม่มีบันทึก...</div>`;
+                    return;
+                }
+                
+                notes.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+                const groupedNotes = notes.reduce((acc, note) => {
+                    const monthYear = new Date(`${note.date}T${note.time}`).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+                    if (!acc[monthYear]) {
+                        acc[monthYear] = [];
+                    }
+                    acc[monthYear].push(note);
+                    return acc;
+                }, {});
+
+                for (const monthYear in groupedNotes) {
+                    const monthGroupContainer = document.createElement('div');
+                    
+                    const monthHeader = document.createElement('h2');
+                    monthHeader.className = 'text-2xl font-bold text-pink-400 mb-4';
+                    monthHeader.textContent = monthYear;
+                    monthGroupContainer.appendChild(monthHeader);
+
+                    const notesGrid = document.createElement('div');
+                    notesGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+
+                    groupedNotes[monthYear].forEach(note => {
+                        const noteCard = document.createElement('div');
+                        noteCard.className = 'note-card bg-white p-5 rounded-xl shadow-md flex flex-col justify-between relative transition-all duration-300';
+                        noteCard.dataset.id = note.id;
+
+                        const dateTime = new Date(`${note.date}T${note.time}`);
+                        const formattedDate = dateTime.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+                        
+                        // Manually format time to ensure 24-hour format, avoiding locale issues.
+                        const hours = dateTime.getHours().toString().padStart(2, '0');
+                        const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+                        const formattedTime = `${hours}:${minutes} น.`;
+
+                        noteCard.innerHTML = `
+                            <p class="text-slate-800 mb-4 flex-grow break-words whitespace-pre-wrap">${note.text}</p>
+                            <div class="text-right text-sm text-pink-400 border-t border-pink-100 pt-2">
+                                <span>${formattedDate}</span>,
+                                <span>${formattedTime}</span>
+                            </div>
+                            <button class="delete-btn absolute top-2 right-2 text-pink-300 hover:text-pink-500 transition-colors" title="ลบบันทึกนี้">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        `;
+                        notesGrid.appendChild(noteCard);
+                    });
+                    monthGroupContainer.appendChild(notesGrid);
+                    notesContainer.appendChild(monthGroupContainer);
+                }
+            }
+
+            // --- Event Listeners ---
+            noteForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = noteText.value.trim();
+                const date = noteDate.value;
+                const time = noteTime.value;
+
+                if (text && date && time) {
+                    const notes = getNotesFromLocalStorage();
+                    const newNote = { id: Date.now(), text, date, time };
+                    notes.push(newNote);
+                    saveNotesToLocalStorage(notes);
+                    noteForm.reset();
+                    renderNotes();
+                }
+            });
+
+            notesContainer.addEventListener('click', (e) => {
+                const deleteButton = e.target.closest('.delete-btn');
+                if (deleteButton) {
+                    const noteCard = deleteButton.closest('.note-card');
+                    const noteId = noteCard.dataset.id;
+                    
+                    if (noteId) {
+                        let notes = getNotesFromLocalStorage();
+                        notes = notes.filter(note => note.id != noteId);
+                        saveNotesToLocalStorage(notes);
+                        renderNotes();
+                    }
+                }
+            });
+
+            // --- Initial Load ---
+            if (localStorage.getItem('notes') === null) {
+                populateInitialData();
+            }
+            renderNotes();
+        });
+    </script>
+</body>
+</html>
+
+
+
